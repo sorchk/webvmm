@@ -8,29 +8,12 @@ go build -o webvmm cmd/webvmm/main.go              # Build
 go run cmd/webvmm/main.go -dev                      # Dev mode (one-off)
 ./webvmm                                            # Run production
 ./webvmm -config /path/to/config.yaml              # Custom config
-air                                                # Live-reload dev (requires air.toml)
 go fmt ./...                                        # Format
 golangci-lint run                                  # Lint
 go test ./... -v                                   # All tests
 go test ./internal/handler -v -run TestName        # Single test
 go test ./... -cover                               # With coverage
 ```
-账号admin密码是EUGrsVxcN9pA
-### Frontend (Vue 3 + TypeScript)
-```bash
-cd web
-npm run dev             # Dev server
-npm run build           # Production build
-npx vue-tsc --noEmit    # Type check
-```
-
-### Full Workflow (with live-reload)
-```bash
-# Terminal 1
-air
-# Terminal 2
-cd web && npm run dev
-```
 
 ### Frontend (Vue 3 + TypeScript)
 ```bash
@@ -40,13 +23,18 @@ npm run build           # Production build
 npx vue-tsc --noEmit    # Type check
 ```
 
-### Full Workflow
+### Development Workflow
 ```bash
-# Terminal 1: Start backend
-./webvmm -dev
+# Terminal 1: Build and run backend (requires sudo for libvirt)
+cd webvmm
+go build -o tmp/webvmm cmd/webvmm/main.go
+sudo ./tmp/webvmm -dev -config ./test/config.yaml
+
 # Terminal 2: Start frontend
-cd web && npm run dev
+cd webvmm/web && npm run dev
 ```
+
+**Note**: Backend requires sudo for libvirt access (`qemu:///system`)
 
 ## Project Structure
 ```

@@ -17,20 +17,21 @@ api.interceptors.request.use(config => {
 const router = useRouter()
 const message = useMessage()
 const loading = ref(false)
+const syncing = ref(false)
 const vms = ref<any[]>([])
 
 const columns = [
   { title: '名称', key: 'name' },
-  { title: '状态', key: 'state', render: (row: any) => {
-    const color = row.state === 'running' ? 'success' : 'default'
-    return h(NTag, { type: color, size: 'small' }, () => row.state)
+  { title: '状态', key: 'status', render: (row: any) => {
+    const color = row.status === 'running' ? 'success' : 'default'
+    return h(NTag, { type: color, size: 'small' }, () => row.status)
   }},
   { title: 'CPU', key: 'vcpu' },
   { title: '内存', key: 'memory' },
   { title: '操作', key: 'actions', render: (row: any) => h(NSpace, {}, () => [
     h(NButton, { size: 'small', onClick: () => router.push(`/vms/${row.id}`) }, () => '详情'),
-    row.state !== 'running' ? h(NButton, { size: 'small', type: 'primary', onClick: () => startVM(row.id) }, () => '启动') : null,
-    row.state === 'running' ? h(NButton, { size: 'small', type: 'warning', onClick: () => stopVM(row.id) }, () => '停止') : null,
+    row.status !== 'running' ? h(NButton, { size: 'small', type: 'primary', onClick: () => startVM(row.id) }, () => '启动') : null,
+    row.status === 'running' ? h(NButton, { size: 'small', type: 'warning', onClick: () => stopVM(row.id) }, () => '停止') : null,
     h(NPopconfirm, { onPositiveClick: () => deleteVM(row.id) }, {
       trigger: () => h(NButton, { size: 'small', type: 'error' }, () => '删除'),
       default: () => '确定要删除此虚拟机吗？'
@@ -47,6 +48,19 @@ async function loadVMs() {
     message.error('加载虚拟机列表失败')
   } finally {
     loading.value = false
+  }
+}
+
+async function syncVMs() {
+  syncing.value = true
+  try {
+    const res = await api.get('/vms/sync')
+    message.success(`${res.data.message}, 新增: ${res.data.added}, 更新: ${res.data.updated}`)
+    loadVMs()
+  } catch (e: any) {
+    message.error(e.response?.data?.error || '同步失败')
+  } finally {
+    syncing.value = false
   }
 }
 
@@ -87,9 +101,14 @@ onMounted(loadVMs)
   <div>
     <n-space justify="space-between" style="margin-bottom: 16px">
       <h2>虚拟机管理</h2>
-      <n-button type="primary" @click="message.info('创建功能开发中')">
-        创建虚拟机
-      </n-button>
+      <n-space>
+        <n-button @click="syncVMs" :loading="syncing">
+          同步KVM
+        </n-button>
+        <n-button type="primary" @click="message.info('创建功能开发中')">
+          创建虚拟机
+        </n-button>
+      </n-space>
     </n-space>
     
     <n-card>

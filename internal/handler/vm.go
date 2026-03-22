@@ -74,6 +74,60 @@ func (h *VMHandler) ListVMs(c *gin.Context) {
 	})
 }
 
+// SyncVMs 同步 libvirt 中的虚拟机到数据库
+func (h *VMHandler) SyncVMs(c *gin.Context) {
+	user, _ := middleware.GetCurrentUser(c)
+
+	if user.Role != models.RoleAdmin {
+		c.JSON(http.StatusForbidden, gin.H{"error": "需要管理员权限"})
+		return
+	}
+
+	domains, err := h.libvirtClient.ListDomains()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取 libvirt 虚拟机失败: " + err.Error()})
+		return
+	}
+
+	var synced, added, updated int
+
+	for _, domain := range domains {
+		var vm models.VM
+		result := database.DB.Where("uuid = ?", domain.UUID).First(&vm)
+
+		if result.Error == gorm.ErrRecordNotFound {
+			vm = models.VM{
+				UUID:    domain.UUID,
+				Name:    domain.Name,
+				Status:  domain.Status,
+				VCPU:    int(domain.VCPU),
+				Memory:  int64(domain.Memory),
+				OwnerID: user.ID,
+			}
+			if err := database.DB.Create(&vm).Error; err != nil {
+				continue
+			}
+			added++
+		} else {
+			vm.Status = domain.Status
+			vm.VCPU = int(domain.VCPU)
+			vm.Memory = int64(domain.Memory)
+			if err := database.DB.Save(&vm).Error; err != nil {
+				continue
+			}
+			updated++
+		}
+		synced++
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "同步完成",
+		"synced":  synced,
+		"added":   added,
+		"updated": updated,
+	})
+}
+
 // GetVM 获取单个虚拟机详情
 func (h *VMHandler) GetVM(c *gin.Context) {
 	id := c.Param("id")

@@ -134,6 +134,7 @@ func SetupRouter(jwtService *auth.JWTService, libvirtClient *libvirt.Client) *gi
 			// 虚拟机管理
 			vms := protected.Group("/vms")
 			{
+				vms.GET("/sync", vmHandler.SyncVMs)
 				vms.GET("", vmHandler.ListVMs)
 				vms.POST("", vmHandler.CreateVM)
 				vms.GET("/:id", vmHandler.GetVM)
