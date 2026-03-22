@@ -1,0 +1,28 @@
+server:
+  port: 8080
+  cert_file: ""
+  key_file: ""
+  auto_gen_cert: false
+  dev_mode: true
+
+database:
+  path: ./test/data.db
+
+auth:
+  jwt_secret: "dev-secret-key"
+  token_expiry: 24
+  refresh_expiry: 168
+
+backup:
+  enabled: false
+  schedule: "0 2 * * *"
+  retention_days: 7
+  webdav:
+    url: ""
+    username: ""
+    password: ""
+    remote_path: "/webvmm_backups"
+
+log:
+  level: "debug"
+  path: "./test/app.log"

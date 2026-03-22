@@ -1,0 +1,6 @@
+test/data.db
+test/data.db-shm
+test/data.db-wal
+tmp
+node_modules
+dist
